@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+// CẬP NHẬT: Import Realtime Database thay vì Firestore
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDgocHQ9uZ2bZ0iIknd3jEkM1Kg5j9TKCU",
@@ -12,6 +13,6 @@ const firebaseConfig = {
   appId: "1:853350883395:web:89a5cdfed21b762e8574f6",
 };
 
-// Khởi tạo Firebase App và Firestore
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// CẬP NHẬT: Export getDatabase
+export const db = getDatabase(app);

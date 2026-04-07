@@ -134,40 +134,42 @@
     </div>
 
     <script type="module">
+      // Import Vue (Dùng vueRef để tránh trùng lặp)
       import {
         createApp,
-        ref,
+        ref as vueRef,
         computed,
         onUnmounted,
       } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-      import {
-        collection,
-        addDoc,
-        onSnapshot,
-      } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-      // GỌI DỮ LIỆU TỪ 2 FILE ĐÃ TÁCH
+      // Import Firebase Realtime Database
+      import {
+        ref as dbRef,
+        push,
+        set,
+        onValue,
+        off,
+      } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
       import { db } from "./firebase-config.js";
       import { questionsData } from "./questions.js";
 
       createApp({
         setup() {
-          const step = ref(0);
-          const playerName = ref("");
-          const score = ref(0);
-          const currentQuestionIndex = ref(0);
+          const step = vueRef(0);
+          const playerName = vueRef("");
+          const score = vueRef(0);
+          const currentQuestionIndex = vueRef(0);
 
           let timerInterval = null;
-          const timeTakenSec = ref(0);
-          const endTimeStr = ref("");
+          const timeTakenSec = vueRef(0);
+          const endTimeStr = vueRef("");
 
-          const isSaving = ref(false);
-          const isLoadingAdmin = ref(false);
-          const allResults = ref([]);
-          let unsubscribeSnapshot = null;
+          const isSaving = vueRef(false);
+          const isLoadingAdmin = vueRef(false);
+          const allResults = vueRef([]);
 
-          // Nạp mảng câu hỏi từ file questions.js
-          const questions = ref(questionsData);
+          const questions = vueRef(questionsData);
 
           const formatDuration = (totalSeconds) => {
             const m = Math.floor(totalSeconds / 60)
@@ -226,8 +228,11 @@
             step.value = 2;
             isSaving.value = true;
 
+            // LƯU DATA LÊN REALTIME DATABASE
             try {
-              await addDoc(collection(db, "quiz_results"), {
+              const resultsRef = dbRef(db, "quiz_results");
+              const newResultRef = push(resultsRef); // Tạo ID ngẫu nhiên mới
+              await set(newResultRef, {
                 name: playerName.value,
                 score: score.value,
                 durationSec: timeTakenSec.value,
@@ -245,18 +250,23 @@
             step.value = 3;
             isLoadingAdmin.value = true;
 
-            unsubscribeSnapshot = onSnapshot(
-              collection(db, "quiz_results"),
-              (querySnapshot) => {
+            // LẮNG NGHE REAL-TIME TỪ RTDB
+            const resultsRef = dbRef(db, "quiz_results");
+            onValue(
+              resultsRef,
+              (snapshot) => {
+                const data = snapshot.val();
                 const tempResults = [];
-                querySnapshot.forEach((doc) => {
-                  tempResults.push(doc.data());
-                });
+
+                if (data) {
+                  // Convert Object của Firebase thành Array
+                  for (let key in data) {
+                    tempResults.push(data[key]);
+                  }
+                }
 
                 tempResults.sort((a, b) => {
-                  if (b.score !== a.score) {
-                    return b.score - a.score;
-                  }
+                  if (b.score !== a.score) return b.score - a.score;
                   return a.durationSec - b.durationSec;
                 });
 
@@ -271,17 +281,15 @@
           };
 
           const resetToHome = () => {
-            if (unsubscribeSnapshot) {
-              unsubscribeSnapshot();
-              unsubscribeSnapshot = null;
-            }
+            // Ngắt kết nối lắng nghe để tối ưu bộ nhớ khi về trang chủ
+            off(dbRef(db, "quiz_results"));
             step.value = 0;
             playerName.value = "";
           };
 
           onUnmounted(() => {
             if (timerInterval) clearInterval(timerInterval);
-            if (unsubscribeSnapshot) unsubscribeSnapshot();
+            off(dbRef(db, "quiz_results"));
           });
 
           return {
