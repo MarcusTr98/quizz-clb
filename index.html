@@ -448,13 +448,15 @@
           };
 
           const checkAnswer = (selectedIndex) => {
-            if (
-              selectedIndex === questions.value[currentQuestionIndex].answer
-            ) {
+            const currentIndex = currentQuestionIndex.value;
+
+            if (!questions.value[currentIndex]) return;
+
+            if (selectedIndex === questions.value[currentIndex].answer) {
               score.value++;
             }
 
-            if (currentQuestionIndex.value < questions.value.length - 1) {
+            if (currentIndex < questions.value.length - 1) {
               currentQuestionIndex.value++;
             } else {
               finishQuiz();
