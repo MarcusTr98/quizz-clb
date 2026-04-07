@@ -16,10 +16,10 @@
       .app-container {
         background: white;
         width: 100%;
-        max-width: 600px;
+        max-width: 650px;
         padding: 30px;
         border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       }
       h2 {
         color: #f26f21;
@@ -47,6 +47,7 @@
         font-size: 16px;
         font-weight: bold;
         margin-bottom: 10px;
+        transition: 0.2s;
       }
       button:hover {
         background-color: #d15a15;
@@ -55,11 +56,18 @@
         background-color: #ccc;
         cursor: not-allowed;
       }
+      .btn-secondary {
+        background-color: #6c757d;
+      }
+      .btn-secondary:hover {
+        background-color: #5a6268;
+      }
       .option-btn {
         background-color: #e9ecef;
         color: #333;
         margin-bottom: 10px;
         text-align: left;
+        font-weight: normal;
       }
       .option-btn:hover {
         background-color: #ced4da;
@@ -70,24 +78,59 @@
         background-color: #e8f5e9;
         border-radius: 8px;
         border: 1px solid #c8e6c9;
-      }
-      .info {
-        font-size: 14px;
-        color: #666;
         margin-bottom: 20px;
-        text-align: right;
       }
-      .leaderboard {
+      .info-bar {
+        display: flex;
+        justify-content: space-between;
+        font-size: 15px;
+        color: #444;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px dashed #eee;
+      }
+      .timer {
+        font-weight: bold;
+        color: #d32f2f;
+      }
+
+      /* Style cho Bảng xếp hạng Host */
+      .table-container {
+        overflow-x: auto;
         margin-top: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
         text-align: left;
-        background: #fff3e0;
-        padding: 15px;
-        border-radius: 8px;
       }
-      .leaderboard li {
-        padding: 5px 0;
-        border-bottom: 1px dashed #ccc;
+      th,
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
       }
+      th {
+        background-color: #f26f21;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      .rank-1 {
+        font-weight: bold;
+        color: #d4af37;
+        font-size: 18px;
+      } /* Vàng */
+      .rank-2 {
+        font-weight: bold;
+        color: #c0c0c0;
+        font-size: 17px;
+      } /* Bạc */
+      .rank-3 {
+        font-weight: bold;
+        color: #cd7f32;
+        font-size: 16px;
+      } /* Đồng */
     </style>
   </head>
   <body>
@@ -95,7 +138,9 @@
       <h2>🏆 SQL MASTER QUIZZ 🏆</h2>
 
       <div v-if="step === 0">
-        <p style="text-align: center">Dành cho sinh viên CNTT</p>
+        <p style="text-align: center; margin-bottom: 25px">
+          Dành cho sinh viên CNTT - FPT Polytechnic
+        </p>
         <div class="input-group">
           <label for="playerName"><b>Họ và tên / Mã sinh viên:</b></label>
           <input
@@ -109,14 +154,23 @@
         <button @click="startQuiz" :disabled="!playerName.trim()">
           Bắt Đầu Làm Bài
         </button>
+
+        <hr style="border-top: 1px solid #eee; margin: 25px 0" />
+        <button class="btn-secondary" @click="viewHostDashboard">
+          📊 Dành cho Host: Xem toàn bộ dữ liệu
+        </button>
       </div>
 
       <div v-if="step === 1">
-        <div class="info">
-          Thí sinh: <b>{{ playerName }}</b> | Câu:
-          <b>{{ currentQuestionIndex + 1 }} / {{ questions.length }}</b>
+        <div class="info-bar">
+          <span>Thí sinh: <b>{{ playerName }}</b></span>
+          <span
+            >Câu:
+            <b>{{ currentQuestionIndex + 1 }} / {{ questions.length }}</b></span
+          >
+          <span class="timer">⏳ {{ formattedTime }}</span>
         </div>
-        <h3 style="margin-bottom: 20px">
+        <h3 style="margin-bottom: 20px; line-height: 1.5">
           {{ questions[currentQuestionIndex].q }}
         </h3>
 
@@ -135,27 +189,81 @@
           <h3 style="color: #2e7d32">
             Hoàn thành xuất sắc, {{ playerName }}! 🎉
           </h3>
-          <h1 style="font-size: 48px; margin: 10px 0; color: #f26f21">
-            {{ score }} / {{ questions.length }}
+          <h1 style="font-size: 54px; margin: 10px 0; color: #f26f21">
+            {{ score }}
+            <span style="font-size: 24px; color: #666"
+              >/ {{ questions.length }}</span
+            >
           </h1>
-          <p><b>Thời gian nộp bài:</b> {{ endTime }}</p>
+
+          <p style="font-size: 18px">
+            ⏱️ Thời gian hoàn thành: <b>{{ formatDuration(timeTakenSec) }}</b>
+          </p>
+          <p>Nộp bài lúc: <i>{{ endTimeStr }}</i></p>
+
           <p v-if="isSaving" style="color: blue">
             Đang lưu điểm lên máy chủ...
           </p>
           <p v-else style="color: green">✔ Đã lưu kết quả thành công!</p>
         </div>
 
-        <div class="leaderboard" v-if="!isSaving && leaderboard.length > 0">
-          <h3>BẢNG XẾP HẠNG TOP 5</h3>
-          <ol>
-            <li v-for="(player, idx) in leaderboard" :key="idx">
-              <b>{{ player.name }}</b> - {{ player.score }} điểm
-            </li>
-          </ol>
+        <button
+          class="btn-secondary"
+          @click="viewHostDashboard"
+          v-if="!isSaving"
+        >
+          Xem Bảng Xếp Hạng
+        </button>
+        <button @click="resetToHome" style="margin-top: 10px">
+          Về Màn Hình Chính
+        </button>
+      </div>
+
+      <div v-if="step === 3">
+        <h3 style="text-align: center; color: #333">
+          📊 BẢNG VÀNG THÀNH TÍCH 📊
+        </h3>
+
+        <p v-if="isLoadingAdmin" style="text-align: center; color: blue">
+          Đang tải dữ liệu từ máy chủ...
+        </p>
+
+        <div class="table-container" v-if="!isLoadingAdmin">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 10%">Top</th>
+                <th style="width: 45%">Họ & Tên</th>
+                <th style="width: 20%">Điểm</th>
+                <th style="width: 25%">Thời gian</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="allResults.length === 0">
+                <td colspan="4" style="text-align: center">
+                  Chưa có dữ liệu người chơi.
+                </td>
+              </tr>
+              <tr v-for="(player, idx) in allResults" :key="idx">
+                <td
+                  :class="{'rank-1': idx === 0, 'rank-2': idx === 1, 'rank-3': idx === 2}"
+                >
+                  #{{ idx + 1 }} {{ idx === 0 ? '👑' : '' }}
+                </td>
+                <td><b>{{ player.name }}</b></td>
+                <td style="color: #2e7d32; font-weight: bold">
+                  {{ player.score }}/25
+                </td>
+                <td style="color: #d32f2f">
+                  {{ formatDuration(player.durationSec) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <br />
-        <button @click="resetQuiz" style="background-color: #6c757d">
-          Chơi Lại
+
+        <button @click="resetToHome" style="margin-top: 25px">
+          Quay Lại Trang Chủ
         </button>
       </div>
     </div>
@@ -164,6 +272,8 @@
       import {
         createApp,
         ref,
+        computed,
+        onUnmounted,
       } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
       import {
@@ -171,11 +281,9 @@
         collection,
         addDoc,
         getDocs,
-        query,
-        orderBy,
-        limit,
       } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+      // THAY LẠI API KEY CỦA BẠN VÀO ĐÂY NHÉ
       const firebaseConfig = {
         apiKey: "AIzaSyDgocHQ9uZ2bZ0iIknd3jEkM1Kg5j9TKCU",
         authDomain: "quizz-sql-clb.firebaseapp.com",
@@ -192,13 +300,20 @@
 
       createApp({
         setup() {
-          const step = ref(0);
+          const step = ref(0); // 0: Home, 1: Quiz, 2: Result, 3: Admin
           const playerName = ref("");
           const score = ref(0);
           const currentQuestionIndex = ref(0);
-          const endTime = ref("");
+
+          // Các biến tính giờ
+          let timerInterval = null;
+          const timeTakenSec = ref(0);
+          const endTimeStr = ref("");
+
+          // Các biến cho Data/API
           const isSaving = ref(false);
-          const leaderboard = ref([]);
+          const isLoadingAdmin = ref(false);
+          const allResults = ref([]);
 
           // TRỌN BỘ 25 CÂU HỎI
           const questions = ref([
@@ -439,23 +554,43 @@
             },
           ]);
 
+          // Format giây thành dạng "01:25"
+          const formatDuration = (totalSeconds) => {
+            const m = Math.floor(totalSeconds / 60)
+              .toString()
+              .padStart(2, "0");
+            const s = (totalSeconds % 60).toString().padStart(2, "0");
+            return `${m}:${s}`;
+          };
+
+          const formattedTime = computed(() =>
+            formatDuration(timeTakenSec.value),
+          );
+
           const startQuiz = () => {
             if (playerName.value.trim() !== "") {
               step.value = 1;
               score.value = 0;
               currentQuestionIndex.value = 0;
+              timeTakenSec.value = 0;
+
+              // Bắt đầu đếm giây
+              timerInterval = setInterval(() => {
+                timeTakenSec.value++;
+              }, 1000);
             }
           };
 
           const checkAnswer = (selectedIndex) => {
             const currentIndex = currentQuestionIndex.value;
+            if (!questions.value[currentIndex]) return; // Guard clause chống lỗi double click
 
-            if (!questions.value[currentIndex]) return;
-
+            // Chấm điểm
             if (selectedIndex === questions.value[currentIndex].answer) {
               score.value++;
             }
 
+            // Chuyển câu hoặc kết thúc
             if (currentIndex < questions.value.length - 1) {
               currentQuestionIndex.value++;
             } else {
@@ -464,8 +599,11 @@
           };
 
           const finishQuiz = async () => {
+            // Dừng đồng hồ
+            clearInterval(timerInterval);
+
             const now = new Date();
-            endTime.value = now.toLocaleString("vi-VN", {
+            endTimeStr.value = now.toLocaleString("vi-VN", {
               timeZone: "Asia/Ho_Chi_Minh",
               hour: "2-digit",
               minute: "2-digit",
@@ -478,14 +616,15 @@
             step.value = 2;
             isSaving.value = true;
 
+            // Đẩy dữ liệu lên Firebase kèm số giây (durationSec)
             try {
               await addDoc(collection(db, "quiz_results"), {
                 name: playerName.value,
                 score: score.value,
-                time: endTime.value,
+                durationSec: timeTakenSec.value, // Lưu số giây thô để dễ so sánh toán học
+                timeCompleted: endTimeStr.value,
                 timestamp: now.getTime(),
               });
-              await fetchLeaderboard();
             } catch (e) {
               console.error("Lỗi khi lưu điểm: ", e);
             } finally {
@@ -493,24 +632,49 @@
             }
           };
 
-          const fetchLeaderboard = async () => {
-            leaderboard.value = [];
-            const q = query(
-              collection(db, "quiz_results"),
-              orderBy("score", "desc"),
-              orderBy("timestamp", "asc"),
-              limit(5),
-            );
-            const querySnapshot = await getDocs(q);
-            querySnapshot.forEach((doc) => {
-              leaderboard.value.push(doc.data());
-            });
+          // Hàm dành cho Host: Lấy toàn bộ dữ liệu và xếp hạng
+          const viewHostDashboard = async () => {
+            step.value = 3;
+            isLoadingAdmin.value = true;
+            allResults.value = [];
+
+            try {
+              const querySnapshot = await getDocs(
+                collection(db, "quiz_results"),
+              );
+              const tempResults = [];
+
+              querySnapshot.forEach((doc) => {
+                tempResults.push(doc.data());
+              });
+
+              // Logic Sắp Xếp Kép (Double Sort) bằng JavaScript
+              // Ưu tiên 1: Điểm (score) xếp giảm dần (từ cao xuống thấp)
+              // Ưu tiên 2: Nếu điểm bằng nhau, Thời gian (durationSec) xếp tăng dần (từ nhanh nhất đến chậm nhất)
+              tempResults.sort((a, b) => {
+                if (b.score !== a.score) {
+                  return b.score - a.score;
+                }
+                return a.durationSec - b.durationSec;
+              });
+
+              allResults.value = tempResults;
+            } catch (e) {
+              console.error("Lỗi khi tải bảng xếp hạng: ", e);
+            } finally {
+              isLoadingAdmin.value = false;
+            }
           };
 
-          const resetQuiz = () => {
+          const resetToHome = () => {
             step.value = 0;
             playerName.value = "";
           };
+
+          // Xóa interval nếu component bị hủy
+          onUnmounted(() => {
+            if (timerInterval) clearInterval(timerInterval);
+          });
 
           return {
             step,
@@ -518,12 +682,17 @@
             score,
             currentQuestionIndex,
             questions,
-            endTime,
+            timeTakenSec,
+            endTimeStr,
+            formattedTime,
             isSaving,
-            leaderboard,
+            isLoadingAdmin,
+            allResults,
             startQuiz,
             checkAnswer,
-            resetQuiz,
+            viewHostDashboard,
+            resetToHome,
+            formatDuration,
           };
         },
       }).mount("#app");
