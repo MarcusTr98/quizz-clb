@@ -3,138 +3,238 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SQL Database Quizz - FPT Polytechnic</title>
+    <title>SQL Master Quiz — FPT Polytechnic</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <div id="app" class="app-container">
-      <h2>🏆 SQL MASTER QUIZZ 🏆</h2>
+      <!-- HEADER (always visible) -->
+      <div class="app-header">
+        <div class="logo-tag">
+          <span class="logo-dot"></span>
+          CLB IT · FPT POLYTECHNIC
+        </div>
+        <h2>SQL <span class="accent">MASTER</span> QUIZ</h2>
+        <div class="subtitle">// database knowledge challenge</div>
+      </div>
 
-      <div v-if="step === 0">
-        <p style="text-align: center; margin-bottom: 25px">
-          Dành cho sinh viên CNTT - FPT Polytechnic
-        </p>
+      <!-- STEP 0: HOME -->
+      <div v-if="step === 0" class="content">
         <div class="input-group">
-          <label for="playerName"><b>Họ và tên / Mã sinh viên:</b></label>
+          <label for="playerName">Họ và tên / Mã sinh viên</label>
           <input
             type="text"
             id="playerName"
             v-model="playerName"
-            placeholder="Nhập tên của bạn để bắt đầu..."
+            placeholder="Nhập tên của bạn..."
             @keyup.enter="startQuiz"
           />
         </div>
-        <button @click="startQuiz" :disabled="!playerName.trim()">
+        <button
+          class="btn-primary"
+          @click="startQuiz"
+          :disabled="!playerName.trim()"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
           Bắt Đầu Làm Bài
         </button>
-        <hr style="border-top: 1px solid #eee; margin: 25px 0" />
-        <button class="btn-secondary" @click="viewHostDashboard">
-          📊 Dành cho Host: Xem bảng điểm trực tiếp
+        <div class="divider">hoặc</div>
+        <button class="btn-ghost" @click="viewHostDashboard">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+          Bảng Xếp Hạng Trực Tiếp
         </button>
       </div>
 
-      <div v-if="step === 1">
+      <!-- STEP 1: QUIZ -->
+      <div v-if="step === 1" class="content">
         <div class="info-bar">
-          <span>Thí sinh: <b>{{ playerName }}</b></span>
-          <span
-            >Câu:
-            <b>{{ currentQuestionIndex + 1 }} / {{ questions.length }}</b></span
-          >
-          <span class="timer">⏳ {{ formattedTime }}</span>
+          <div class="info-item">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <b>{{ playerName }}</b>
+          </div>
+          <div class="info-item">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span class="timer">{{ formattedTime }}</span>
+          </div>
         </div>
-        <h3 style="margin-bottom: 20px; line-height: 1.5">
-          {{ questions[currentQuestionIndex].q }}
-        </h3>
+
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span
+              >Câu {{ currentQuestionIndex + 1 }} / {{ questions.length }}</span
+            >
+            <span
+              >{{ Math.round(((currentQuestionIndex) / questions.length) * 100)
+              }}%</span
+            >
+          </div>
+          <div class="progress-track">
+            <div
+              class="progress-fill"
+              :style="{ width: ((currentQuestionIndex / questions.length) * 100) + '%' }"
+            ></div>
+          </div>
+        </div>
+
+        <div class="question-meta">[ Q{{ currentQuestionIndex + 1 }} ]</div>
+        <div class="question-text">
+          {{ questions[currentQuestionIndex].q.replace(/^Câu \d+: /, '') }}
+        </div>
+
         <div
           v-for="(option, index) in questions[currentQuestionIndex].options"
           :key="index"
         >
           <button class="option-btn" @click="checkAnswer(index)">
-            {{ String.fromCharCode(65 + index) }}. {{ option }}
+            <span class="option-key"
+              >{{ String.fromCharCode(65 + index) }}</span
+            >
+            <span>{{ option }}</span>
           </button>
         </div>
       </div>
 
-      <div v-if="step === 2">
+      <!-- STEP 2: RESULT -->
+      <div v-if="step === 2" class="content">
         <div class="result-box">
-          <h3 style="color: #2e7d32">
-            Hoàn thành xuất sắc, {{ playerName }}! 🎉
-          </h3>
-          <h1 style="font-size: 54px; margin: 10px 0; color: #f26f21">
-            {{ score }}
-            <span style="font-size: 24px; color: #666"
-              >/ {{ questions.length }}</span
-            >
-          </h1>
-          <p style="font-size: 18px">
-            ⏱️ Thời gian hoàn thành: <b>{{ formatDuration(timeTakenSec) }}</b>
-          </p>
-          <p>Nộp bài lúc: <i>{{ endTimeStr }}</i></p>
-          <p v-if="isSaving" style="color: blue">
-            Đang lưu điểm lên máy chủ...
-          </p>
-          <p v-else style="color: green">✔ Đã lưu kết quả thành công!</p>
+          <div class="result-badge">✓ Hoàn thành</div>
+          <div class="result-name">{{ playerName }}</div>
+          <div>
+            <span class="score-big">{{ score }}</span>
+            <span class="score-denom">/ {{ questions.length }}</span>
+          </div>
+          <div class="result-stats">
+            <div class="stat-item">
+              <div class="stat-label">Thời gian</div>
+              <div class="stat-value">{{ formatDuration(timeTakenSec) }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Độ chính xác</div>
+              <div class="stat-value">
+                {{ Math.round((score / questions.length) * 100) }}%
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Nộp lúc</div>
+              <div class="stat-value" style="font-size: 11px">
+                {{ endTimeStr }}
+              </div>
+            </div>
+          </div>
+          <div class="save-msg" :class="isSaving ? 'saving' : 'saved'">
+            {{ isSaving ? '↑ Đang lưu...' : '✓ Đã lưu kết quả' }}
+          </div>
         </div>
-        <button
-          class="btn-secondary"
-          @click="viewHostDashboard"
-          v-if="!isSaving"
-        >
+
+        <button class="btn-primary" @click="viewHostDashboard" v-if="!isSaving">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
           Xem Bảng Xếp Hạng
         </button>
-        <button @click="resetToHome" style="margin-top: 10px">
-          Về Màn Hình Chính
-        </button>
+        <button class="btn-ghost" @click="resetToHome">Về Trang Chủ</button>
       </div>
 
-      <div v-if="step === 3">
-        <h3 style="text-align: center; color: #333">
-          📊 BẢNG VÀNG THÀNH TÍCH (LIVE TRỰC TIẾP) 📊
-        </h3>
-        <p v-if="isLoadingAdmin" style="text-align: center; color: blue">
-          Đang kết nối luồng dữ liệu...
-        </p>
+      <!-- STEP 3: LEADERBOARD -->
+      <div v-if="step === 3" class="content">
+        <div class="lb-header">
+          <div class="lb-title">Bảng Vàng Thành Tích</div>
+          <div class="live-chip">
+            <span class="live-dot"></span>
+            LIVE
+          </div>
+        </div>
+
+        <p v-if="isLoadingAdmin" class="loading-text">// Đang kết nối...</p>
+
         <div class="table-container" v-if="!isLoadingAdmin">
           <table>
             <thead>
               <tr>
                 <th style="width: 10%">Top</th>
-                <th style="width: 45%">Họ & Tên</th>
-                <th style="width: 20%">Điểm</th>
-                <th style="width: 25%">Thời gian</th>
+                <th style="width: 42%">Thí Sinh</th>
+                <th style="width: 22%">Điểm</th>
+                <th style="width: 26%">Thời Gian</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="allResults.length === 0">
-                <td colspan="4" style="text-align: center">
-                  Chưa có dữ liệu người chơi.
-                </td>
+              <tr class="empty-row" v-if="allResults.length === 0">
+                <td colspan="4">// Chưa có dữ liệu</td>
               </tr>
               <tr v-for="(player, idx) in allResults" :key="idx">
-                <td
-                  :class="{'rank-1': idx === 0, 'rank-2': idx === 1, 'rank-3': idx === 2}"
-                >
-                  #{{ idx + 1 }} {{ idx === 0 ? '👑' : '' }}
+                <td class="rank-col">
+                  #{{ idx + 1 }}{{ idx === 0 ? ' ★' : '' }}
                 </td>
-                <td><b>{{ player.name }}</b></td>
-                <td style="color: #2e7d32; font-weight: bold">
-                  {{ player.score }}/25
+                <td class="player-col">{{ player.name }}</td>
+                <td class="score-col">
+                  {{ player.score }}/{{ questions.length }}
                 </td>
-                <td style="color: #d32f2f">
+                <td class="time-col">
                   {{ formatDuration(player.durationSec) }}
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <button @click="resetToHome" style="margin-top: 25px">
+
+        <button class="btn-ghost" @click="resetToHome" style="margin-top: 20px">
           Quay Lại Trang Chủ
         </button>
       </div>
     </div>
 
     <script type="module">
-      // Import Vue (Dùng vueRef để tránh trùng lặp)
       import {
         createApp,
         ref as vueRef,
@@ -142,7 +242,6 @@
         onUnmounted,
       } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 
-      // Import Firebase Realtime Database
       import {
         ref as dbRef,
         push,
@@ -189,7 +288,6 @@
               score.value = 0;
               currentQuestionIndex.value = 0;
               timeTakenSec.value = 0;
-
               timerInterval = setInterval(() => {
                 timeTakenSec.value++;
               }, 1000);
@@ -228,10 +326,9 @@
             step.value = 2;
             isSaving.value = true;
 
-            // LƯU DATA LÊN REALTIME DATABASE
             try {
               const resultsRef = dbRef(db, "quiz_results");
-              const newResultRef = push(resultsRef); // Tạo ID ngẫu nhiên mới
+              const newResultRef = push(resultsRef);
               await set(newResultRef, {
                 name: playerName.value,
                 score: score.value,
@@ -250,7 +347,6 @@
             step.value = 3;
             isLoadingAdmin.value = true;
 
-            // LẮNG NGHE REAL-TIME TỪ RTDB
             const resultsRef = dbRef(db, "quiz_results");
             onValue(
               resultsRef,
@@ -259,7 +355,6 @@
                 const tempResults = [];
 
                 if (data) {
-                  // Convert Object của Firebase thành Array
                   for (let key in data) {
                     tempResults.push(data[key]);
                   }
@@ -281,7 +376,6 @@
           };
 
           const resetToHome = () => {
-            // Ngắt kết nối lắng nghe để tối ưu bộ nhớ khi về trang chủ
             off(dbRef(db, "quiz_results"));
             step.value = 0;
             playerName.value = "";
