@@ -4,134 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SQL Database Quizz - FPT Polytechnic</title>
-    <style>
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #f4f7f6;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        justify-content: center;
-      }
-      .app-container {
-        background: white;
-        width: 100%;
-        max-width: 650px;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      }
-      h2 {
-        color: #f26f21;
-        text-align: center;
-      }
-      .input-group {
-        margin-bottom: 20px;
-      }
-      input[type="text"] {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-sizing: border-box;
-        font-size: 16px;
-      }
-      button {
-        background-color: #f26f21;
-        color: white;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        width: 100%;
-        font-size: 16px;
-        font-weight: bold;
-        margin-bottom: 10px;
-        transition: 0.2s;
-      }
-      button:hover {
-        background-color: #d15a15;
-      }
-      button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-      .btn-secondary {
-        background-color: #6c757d;
-      }
-      .btn-secondary:hover {
-        background-color: #5a6268;
-      }
-      .option-btn {
-        background-color: #e9ecef;
-        color: #333;
-        margin-bottom: 10px;
-        text-align: left;
-        font-weight: normal;
-      }
-      .option-btn:hover {
-        background-color: #ced4da;
-      }
-      .result-box {
-        text-align: center;
-        padding: 20px;
-        background-color: #e8f5e9;
-        border-radius: 8px;
-        border: 1px solid #c8e6c9;
-        margin-bottom: 20px;
-      }
-      .info-bar {
-        display: flex;
-        justify-content: space-between;
-        font-size: 15px;
-        color: #444;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px dashed #eee;
-      }
-      .timer {
-        font-weight: bold;
-        color: #d32f2f;
-      }
-
-      /* Style cho Bảng xếp hạng Host */
-      .table-container {
-        overflow-x: auto;
-        margin-top: 20px;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-      }
-      th,
-      td {
-        padding: 12px;
-        border-bottom: 1px solid #ddd;
-      }
-      th {
-        background-color: #f26f21;
-        color: white;
-      }
-      tr:nth-child(even) {
-        background-color: #f9f9f9;
-      }
-      .rank-1 {
-        font-weight: bold;
-        color: #d4af37;
-        font-size: 18px;
-      } /* Vàng */
-      .rank-2 {
-        font-weight: bold;
-        color: #c0c0c0;
-        font-size: 17px;
-      } /* Bạc */
-      .rank-3 {
-        font-weight: bold;
-        color: #cd7f32;
-        font-size: 16px;
-      } /* Đồng */
-    </style>
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <div id="app" class="app-container">
@@ -154,10 +27,9 @@
         <button @click="startQuiz" :disabled="!playerName.trim()">
           Bắt Đầu Làm Bài
         </button>
-
         <hr style="border-top: 1px solid #eee; margin: 25px 0" />
         <button class="btn-secondary" @click="viewHostDashboard">
-          📊 Dành cho Host: Xem toàn bộ dữ liệu
+          📊 Dành cho Host: Xem bảng điểm trực tiếp
         </button>
       </div>
 
@@ -173,7 +45,6 @@
         <h3 style="margin-bottom: 20px; line-height: 1.5">
           {{ questions[currentQuestionIndex].q }}
         </h3>
-
         <div
           v-for="(option, index) in questions[currentQuestionIndex].options"
           :key="index"
@@ -195,18 +66,15 @@
               >/ {{ questions.length }}</span
             >
           </h1>
-
           <p style="font-size: 18px">
             ⏱️ Thời gian hoàn thành: <b>{{ formatDuration(timeTakenSec) }}</b>
           </p>
           <p>Nộp bài lúc: <i>{{ endTimeStr }}</i></p>
-
           <p v-if="isSaving" style="color: blue">
             Đang lưu điểm lên máy chủ...
           </p>
           <p v-else style="color: green">✔ Đã lưu kết quả thành công!</p>
         </div>
-
         <button
           class="btn-secondary"
           @click="viewHostDashboard"
@@ -221,13 +89,11 @@
 
       <div v-if="step === 3">
         <h3 style="text-align: center; color: #333">
-          📊 BẢNG VÀNG THÀNH TÍCH 📊
+          📊 BẢNG VÀNG THÀNH TÍCH (LIVE TRỰC TIẾP) 📊
         </h3>
-
         <p v-if="isLoadingAdmin" style="text-align: center; color: blue">
-          Đang tải dữ liệu từ máy chủ...
+          Đang kết nối luồng dữ liệu...
         </p>
-
         <div class="table-container" v-if="!isLoadingAdmin">
           <table>
             <thead>
@@ -261,7 +127,6 @@
             </tbody>
           </table>
         </div>
-
         <button @click="resetToHome" style="margin-top: 25px">
           Quay Lại Trang Chủ
         </button>
@@ -275,286 +140,35 @@
         computed,
         onUnmounted,
       } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
       import {
-        getFirestore,
         collection,
         addDoc,
-        getDocs,
+        onSnapshot,
       } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-      // THAY LẠI API KEY CỦA BẠN VÀO ĐÂY NHÉ
-      const firebaseConfig = {
-        apiKey: "AIzaSyDgocHQ9uZ2bZ0iIknd3jEkM1Kg5j9TKCU",
-        authDomain: "quizz-sql-clb.firebaseapp.com",
-        databaseURL:
-          "https://quizz-sql-clb-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "quizz-sql-clb",
-        storageBucket: "quizz-sql-clb.firebasestorage.app",
-        messagingSenderId: "853350883395",
-        appId: "1:853350883395:web:89a5cdfed21b762e8574f6",
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+      // GỌI DỮ LIỆU TỪ 2 FILE ĐÃ TÁCH
+      import { db } from "./firebase-config.js";
+      import { questionsData } from "./questions.js";
 
       createApp({
         setup() {
-          const step = ref(0); // 0: Home, 1: Quiz, 2: Result, 3: Admin
+          const step = ref(0);
           const playerName = ref("");
           const score = ref(0);
           const currentQuestionIndex = ref(0);
 
-          // Các biến tính giờ
           let timerInterval = null;
           const timeTakenSec = ref(0);
           const endTimeStr = ref("");
 
-          // Các biến cho Data/API
           const isSaving = ref(false);
           const isLoadingAdmin = ref(false);
           const allResults = ref([]);
+          let unsubscribeSnapshot = null;
 
-          // TRỌN BỘ 25 CÂU HỎI
-          const questions = ref([
-            {
-              q: "Câu 1: Lệnh nào sau đây thuộc nhóm DML (Data Manipulation Language)?",
-              options: [
-                "CREATE, DROP, ALTER",
-                "GRANT, REVOKE",
-                "SELECT, INSERT, UPDATE, DELETE",
-                "COMMIT, ROLLBACK",
-              ],
-              answer: 2,
-            },
-            {
-              q: "Câu 2: Thứ tự thực thi CỐT LÕI của một truy vấn SQL chứa các mệnh đề sau là gì?",
-              options: [
-                "SELECT -> FROM -> WHERE -> GROUP BY",
-                "FROM -> WHERE -> GROUP BY -> SELECT",
-                "WHERE -> FROM -> SELECT -> GROUP BY",
-                "FROM -> GROUP BY -> WHERE -> SELECT",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 3: Sự khác biệt chính giữa UNION và UNION ALL là gì?",
-              options: [
-                "UNION ALL tự động sắp xếp kết quả.",
-                "UNION loại bỏ các dòng trùng lặp, UNION ALL giữ lại tất cả.",
-                "UNION ALL chỉ dùng được trong MySQL.",
-                "Không có sự khác biệt.",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 4: Mệnh đề HAVING được sử dụng để làm gì?",
-              options: [
-                "Lọc dữ liệu trước khi gom nhóm.",
-                "Thay thế hoàn toàn cho WHERE.",
-                "Lọc dữ liệu sau khi đã gom nhóm (GROUP BY).",
-                "Sắp xếp dữ liệu giảm dần.",
-              ],
-              answer: 2,
-            },
-            {
-              q: "Câu 5: Tính chất ACID trong Database Transaction không bao gồm yếu tố nào?",
-              options: [
-                "Atomicity (Tính nguyên tử)",
-                "Consistency (Tính nhất quán)",
-                "Isolation (Tính độc lập)",
-                "Concurrency (Tính đồng thời)",
-              ],
-              answer: 3,
-            },
-            {
-              q: "Câu 6: INNER JOIN sẽ trả về kết quả nào?",
-              options: [
-                "Tất cả các bản ghi của bảng bên trái.",
-                "Tất cả các bản ghi của bảng bên phải.",
-                "Chỉ các bản ghi có sự khớp nhau ở cả hai bảng.",
-                "Tất cả bản ghi của cả hai bảng.",
-              ],
-              answer: 2,
-            },
-            {
-              q: "Câu 7: Sự khác biệt giữa kiểu VARCHAR và NVARCHAR?",
-              options: [
-                "VARCHAR lưu độ dài cố định, NVARCHAR lưu độ dài thay đổi.",
-                "NVARCHAR hỗ trợ lưu trữ ký tự Unicode (tiếng Việt có dấu).",
-                "VARCHAR có tốc độ chậm hơn NVARCHAR.",
-                "NVARCHAR chỉ tồn tại trong MySQL.",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 8: COUNT(*) và COUNT(Tên_Cột) khác nhau ở điểm nào?",
-              options: [
-                "COUNT(*) đếm cả những dòng có giá trị NULL ở cột, COUNT(Tên_Cột) bỏ qua NULL.",
-                "COUNT(Tên_Cột) chạy nhanh hơn COUNT(*).",
-                "Không có sự khác biệt.",
-                "COUNT(*) chỉ đếm các dòng không trùng lặp.",
-              ],
-              answer: 0,
-            },
-            {
-              q: "Câu 9: Ràng buộc (Constraint) nào đảm bảo không có giá trị trùng lặp và không chứa giá trị NULL?",
-              options: ["UNIQUE", "FOREIGN KEY", "PRIMARY KEY", "CHECK"],
-              answer: 2,
-            },
-            {
-              q: "Câu 10: Ký tự đại diện (Wildcard) nào dùng trong toán tử LIKE để đại diện cho đúng MỘT ký tự bất kỳ?",
-              options: ["%", "*", "_ (Underscore)", "?"],
-              answer: 2,
-            },
-            {
-              q: "Câu 11: Cổng (Port) mặc định của MySQL và SQL Server lần lượt là?",
-              options: [
-                "8080 và 1433",
-                "3306 và 1433",
-                "1433 và 3306",
-                "3306 và 8080",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 12: Để giới hạn lấy 5 bản ghi đầu tiên, cú pháp nào đúng?",
-              options: [
-                "LIMIT 5 (SQL Server) / TOP 5 (MySQL)",
-                "TOP 5 (SQL Server) / LIMIT 5 (MySQL)",
-                "FETCH FIRST 5 (cả hai)",
-                "MAX 5 (cả hai)",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 13: Để tạo một cột tự động tăng giá trị khi thêm mới bản ghi, ta dùng từ khóa nào?",
-              options: [
-                "AUTO_INCREMENT (MySQL) và IDENTITY (SQL Server)",
-                "IDENTITY (MySQL) và AUTO_INCREMENT (SQL Server)",
-                "SERIAL (MySQL) và AUTO_INCREMENT (SQL Server)",
-                "AUTO_NUM (cả hai)",
-              ],
-              answer: 0,
-            },
-            {
-              q: "Câu 14: Lệnh nào dùng để nối chuỗi (Concatenation) trong SQL Server?",
-              options: [
-                "CONCAT()",
-                "Dấu cộng (+)",
-                "Dấu hai gạch (||)",
-                "Cả A và B đều đúng",
-              ],
-              answer: 3,
-            },
-            {
-              q: "Câu 15: Hàm lấy ngày giờ hiện tại của hệ thống?",
-              options: [
-                "GETDATE() trong MySQL, NOW() trong SQL Server.",
-                "NOW() trong MySQL, GETDATE() trong SQL Server.",
-                "CURDATE() dùng chung cho cả hai.",
-                "SYSDATE() dùng chung cho cả hai.",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 16: Lệnh để gọi một Stored Procedure đã được tạo?",
-              options: [
-                "EXEC (SQL Server) và CALL (MySQL)",
-                "CALL (SQL Server) và EXEC (MySQL)",
-                "RUN (cả hai)",
-                "EXECUTE (cả hai)",
-              ],
-              answer: 0,
-            },
-            {
-              q: "Câu 17: Xử lý giá trị NULL: Nếu muốn trả về số 0 khi cột bị NULL, cú pháp nào đúng?",
-              options: [
-                "IFNULL(cot, 0) trong SQL Server",
-                "ISNULL(cot, 0) trong MySQL",
-                "ISNULL(cot, 0) trong SQL Server / IFNULL(cot, 0) trong MySQL",
-                "NVL(cot, 0) trong cả hai",
-              ],
-              answer: 2,
-            },
-            {
-              q: "Câu 18: Storage Engine mặc định (hỗ trợ Transaction) của MySQL là gì?",
-              options: ["MyISAM", "InnoDB", "Memory", "SQLEngine"],
-              answer: 1,
-            },
-            {
-              q: "Câu 19: Để lấy độ dài của một chuỗi, hàm nào được sử dụng?",
-              options: [
-                "LENGTH() (MySQL) và LEN() (SQL Server)",
-                "LEN() (MySQL) và LENGTH() (SQL Server)",
-                "SIZE() trong cả hai",
-                "STRLEN() trong cả hai",
-              ],
-              answer: 0,
-            },
-            {
-              q: "Câu 20: Kiểu dữ liệu nào lưu giá trị Boolean (True/False) một cách tối ưu nhất?",
-              options: [
-                "BOOLEAN trong SQL Server, BIT trong MySQL.",
-                "BIT trong SQL Server, TINYINT(1) hoặc BOOLEAN trong MySQL.",
-                "VARCHAR(5) cho cả hai.",
-                "INT cho cả hai.",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 21: Câu lệnh TRUNCATE khác với DELETE ở điểm nào?",
-              options: [
-                "TRUNCATE xóa cấu trúc bảng, DELETE chỉ xóa dữ liệu.",
-                "TRUNCATE không ghi log từng dòng bị xóa, nên nhanh hơn và thường không thể ROLLBACK.",
-                "DELETE có thể reset lại chỉ số tự tăng (Identity), TRUNCATE thì không.",
-                "Không có sự khác biệt.",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 22: Clustered Index (Chỉ mục cụm) có đặc điểm gì?",
-              options: [
-                "Một bảng có thể có nhiều Clustered Index.",
-                "Nó sắp xếp dữ liệu vật lý của bảng dựa trên cột được đánh index.",
-                "Nó tạo ra một bảng tham chiếu riêng rẽ để tăng tốc độ tìm kiếm.",
-                "Chỉ tạo được trên các cột kiểu số.",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 23: Vấn đề 'SQL Injection' xảy ra chủ yếu do nguyên nhân nào?",
-              options: [
-                "Cấu hình server cơ sở dữ liệu yếu.",
-                "Nối chuỗi (cộng chuỗi) trực tiếp tham số đầu vào từ người dùng vào câu truy vấn.",
-                "Không sử dụng HTTPS.",
-                "Dùng MySQL thay vì SQL Server.",
-              ],
-              answer: 1,
-            },
-            {
-              q: "Câu 24: Trigger được kích hoạt khi nào?",
-              options: [
-                "Bất cứ khi nào có câu lệnh SELECT được chạy.",
-                "Khi được gọi thủ công bằng lệnh EXECUTE.",
-                "Tự động kích hoạt khi có sự kiện INSERT, UPDATE hoặc DELETE xảy ra trên bảng.",
-                "Khi Database server khởi động.",
-              ],
-              answer: 2,
-            },
-            {
-              q: "Câu 25: Khi thực thi truy vấn có mệnh đề LEFT JOIN, nếu bảng bên phải không có bản ghi tương ứng thì điều gì xảy ra?",
-              options: [
-                "Lỗi cú pháp (Syntax error).",
-                "Truy vấn trả về kết quả bị thiếu các hàng của bảng bên trái.",
-                "Các cột của bảng bên phải sẽ hiển thị giá trị NULL ở hàng kết quả tương ứng.",
-                "Chỉ hiển thị các bản ghi khớp nhau giống hệt INNER JOIN.",
-              ],
-              answer: 2,
-            },
-          ]);
+          // Nạp mảng câu hỏi từ file questions.js
+          const questions = ref(questionsData);
 
-          // Format giây thành dạng "01:25"
           const formatDuration = (totalSeconds) => {
             const m = Math.floor(totalSeconds / 60)
               .toString()
@@ -574,7 +188,6 @@
               currentQuestionIndex.value = 0;
               timeTakenSec.value = 0;
 
-              // Bắt đầu đếm giây
               timerInterval = setInterval(() => {
                 timeTakenSec.value++;
               }, 1000);
@@ -583,14 +196,12 @@
 
           const checkAnswer = (selectedIndex) => {
             const currentIndex = currentQuestionIndex.value;
-            if (!questions.value[currentIndex]) return; // Guard clause chống lỗi double click
+            if (!questions.value[currentIndex]) return;
 
-            // Chấm điểm
             if (selectedIndex === questions.value[currentIndex].answer) {
               score.value++;
             }
 
-            // Chuyển câu hoặc kết thúc
             if (currentIndex < questions.value.length - 1) {
               currentQuestionIndex.value++;
             } else {
@@ -599,7 +210,6 @@
           };
 
           const finishQuiz = async () => {
-            // Dừng đồng hồ
             clearInterval(timerInterval);
 
             const now = new Date();
@@ -616,12 +226,11 @@
             step.value = 2;
             isSaving.value = true;
 
-            // Đẩy dữ liệu lên Firebase kèm số giây (durationSec)
             try {
               await addDoc(collection(db, "quiz_results"), {
                 name: playerName.value,
                 score: score.value,
-                durationSec: timeTakenSec.value, // Lưu số giây thô để dễ so sánh toán học
+                durationSec: timeTakenSec.value,
                 timeCompleted: endTimeStr.value,
                 timestamp: now.getTime(),
               });
@@ -632,48 +241,47 @@
             }
           };
 
-          // Hàm dành cho Host: Lấy toàn bộ dữ liệu và xếp hạng
-          const viewHostDashboard = async () => {
+          const viewHostDashboard = () => {
             step.value = 3;
             isLoadingAdmin.value = true;
-            allResults.value = [];
 
-            try {
-              const querySnapshot = await getDocs(
-                collection(db, "quiz_results"),
-              );
-              const tempResults = [];
+            unsubscribeSnapshot = onSnapshot(
+              collection(db, "quiz_results"),
+              (querySnapshot) => {
+                const tempResults = [];
+                querySnapshot.forEach((doc) => {
+                  tempResults.push(doc.data());
+                });
 
-              querySnapshot.forEach((doc) => {
-                tempResults.push(doc.data());
-              });
+                tempResults.sort((a, b) => {
+                  if (b.score !== a.score) {
+                    return b.score - a.score;
+                  }
+                  return a.durationSec - b.durationSec;
+                });
 
-              // Logic Sắp Xếp Kép (Double Sort) bằng JavaScript
-              // Ưu tiên 1: Điểm (score) xếp giảm dần (từ cao xuống thấp)
-              // Ưu tiên 2: Nếu điểm bằng nhau, Thời gian (durationSec) xếp tăng dần (từ nhanh nhất đến chậm nhất)
-              tempResults.sort((a, b) => {
-                if (b.score !== a.score) {
-                  return b.score - a.score;
-                }
-                return a.durationSec - b.durationSec;
-              });
-
-              allResults.value = tempResults;
-            } catch (e) {
-              console.error("Lỗi khi tải bảng xếp hạng: ", e);
-            } finally {
-              isLoadingAdmin.value = false;
-            }
+                allResults.value = tempResults;
+                isLoadingAdmin.value = false;
+              },
+              (error) => {
+                console.error("Lỗi đồng bộ Real-time: ", error);
+                isLoadingAdmin.value = false;
+              },
+            );
           };
 
           const resetToHome = () => {
+            if (unsubscribeSnapshot) {
+              unsubscribeSnapshot();
+              unsubscribeSnapshot = null;
+            }
             step.value = 0;
             playerName.value = "";
           };
 
-          // Xóa interval nếu component bị hủy
           onUnmounted(() => {
             if (timerInterval) clearInterval(timerInterval);
+            if (unsubscribeSnapshot) unsubscribeSnapshot();
           });
 
           return {
