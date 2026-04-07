@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQL Database Quizz - FPT Polytechnic</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+      }
+      .app-container {
+        background: white;
+        width: 100%;
+        max-width: 600px;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        color: #f26f21;
+        text-align: center;
+      }
+      .input-group {
+        margin-bottom: 20px;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+      button {
+        background-color: #f26f21;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      button:hover {
+        background-color: #d15a15;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .option-btn {
+        background-color: #e9ecef;
+        color: #333;
+        margin-bottom: 10px;
+        text-align: left;
+      }
+      .option-btn:hover {
+        background-color: #ced4da;
+      }
+      .result-box {
+        text-align: center;
+        padding: 20px;
+        background-color: #e8f5e9;
+        border-radius: 8px;
+        border: 1px solid #c8e6c9;
+      }
+      .info {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 20px;
+        text-align: right;
+      }
+      .leaderboard {
+        margin-top: 20px;
+        text-align: left;
+        background: #fff3e0;
+        padding: 15px;
+        border-radius: 8px;
+      }
+      .leaderboard li {
+        padding: 5px 0;
+        border-bottom: 1px dashed #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="app-container">
+      <h2>🏆 SQL MASTER QUIZZ 🏆</h2>
+
+      <div v-if="step === 0">
+        <p style="text-align: center">Dành cho sinh viên CNTT</p>
+        <div class="input-group">
+          <label for="playerName"><b>Họ và tên / Mã sinh viên:</b></label>
+          <input
+            type="text"
+            id="playerName"
+            v-model="playerName"
+            placeholder="Nhập tên của bạn để bắt đầu..."
+            @keyup.enter="startQuiz"
+          />
+        </div>
+        <button @click="startQuiz" :disabled="!playerName.trim()">
+          Bắt Đầu Làm Bài
+        </button>
+      </div>
+
+      <div v-if="step === 1">
+        <div class="info">
+          Thí sinh: <b>{{ playerName }}</b> | Câu:
+          <b>{{ currentQuestionIndex + 1 }} / {{ questions.length }}</b>
+        </div>
+        <h3 style="margin-bottom: 20px">
+          {{ questions[currentQuestionIndex].q }}
+        </h3>
+
+        <div
+          v-for="(option, index) in questions[currentQuestionIndex].options"
+          :key="index"
+        >
+          <button class="option-btn" @click="checkAnswer(index)">
+            {{ String.fromCharCode(65 + index) }}. {{ option }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="step === 2">
+        <div class="result-box">
+          <h3 style="color: #2e7d32">
+            Hoàn thành xuất sắc, {{ playerName }}! 🎉
+          </h3>
+          <h1 style="font-size: 48px; margin: 10px 0; color: #f26f21">
+            {{ score }} / {{ questions.length }}
+          </h1>
+          <p><b>Thời gian nộp bài:</b> {{ endTime }}</p>
+          <p v-if="isSaving" style="color: blue">
+            Đang lưu điểm lên máy chủ...
+          </p>
+          <p v-else style="color: green">✔ Đã lưu kết quả thành công!</p>
+        </div>
+
+        <div class="leaderboard" v-if="!isSaving && leaderboard.length > 0">
+          <h3>BẢNG XẾP HẠNG TOP 5</h3>
+          <ol>
+            <li v-for="(player, idx) in leaderboard" :key="idx">
+              <b>{{ player.name }}</b> - {{ player.score }} điểm
+            </li>
+          </ol>
+        </div>
+        <br />
+        <button @click="resetQuiz" style="background-color: #6c757d">
+          Chơi Lại
+        </button>
+      </div>
+    </div>
+
+    <script type="module">
+      import {
+        createApp,
+        ref,
+      } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        getDocs,
+        query,
+        orderBy,
+        limit,
+      } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDgocHQ9uZ2bZ0iIknd3jEkM1Kg5j9TKCU",
+        authDomain: "quizz-sql-clb.firebaseapp.com",
+        databaseURL:
+          "https://quizz-sql-clb-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "quizz-sql-clb",
+        storageBucket: "quizz-sql-clb.firebasestorage.app",
+        messagingSenderId: "853350883395",
+        appId: "1:853350883395:web:89a5cdfed21b762e8574f6",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      createApp({
+        setup() {
+          const step = ref(0);
+          const playerName = ref("");
+          const score = ref(0);
+          const currentQuestionIndex = ref(0);
+          const endTime = ref("");
+          const isSaving = ref(false);
+          const leaderboard = ref([]);
+
+          // TRỌN BỘ 25 CÂU HỎI
+          const questions = ref([
+            {
+              q: "Câu 1: Lệnh nào sau đây thuộc nhóm DML (Data Manipulation Language)?",
+              options: [
+                "CREATE, DROP, ALTER",
+                "GRANT, REVOKE",
+                "SELECT, INSERT, UPDATE, DELETE",
+                "COMMIT, ROLLBACK",
+              ],
+              answer: 2,
+            },
+            {
+              q: "Câu 2: Thứ tự thực thi CỐT LÕI của một truy vấn SQL chứa các mệnh đề sau là gì?",
+              options: [
+                "SELECT -> FROM -> WHERE -> GROUP BY",
+                "FROM -> WHERE -> GROUP BY -> SELECT",
+                "WHERE -> FROM -> SELECT -> GROUP BY",
+                "FROM -> GROUP BY -> WHERE -> SELECT",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 3: Sự khác biệt chính giữa UNION và UNION ALL là gì?",
+              options: [
+                "UNION ALL tự động sắp xếp kết quả.",
+                "UNION loại bỏ các dòng trùng lặp, UNION ALL giữ lại tất cả.",
+                "UNION ALL chỉ dùng được trong MySQL.",
+                "Không có sự khác biệt.",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 4: Mệnh đề HAVING được sử dụng để làm gì?",
+              options: [
+                "Lọc dữ liệu trước khi gom nhóm.",
+                "Thay thế hoàn toàn cho WHERE.",
+                "Lọc dữ liệu sau khi đã gom nhóm (GROUP BY).",
+                "Sắp xếp dữ liệu giảm dần.",
+              ],
+              answer: 2,
+            },
+            {
+              q: "Câu 5: Tính chất ACID trong Database Transaction không bao gồm yếu tố nào?",
+              options: [
+                "Atomicity (Tính nguyên tử)",
+                "Consistency (Tính nhất quán)",
+                "Isolation (Tính độc lập)",
+                "Concurrency (Tính đồng thời)",
+              ],
+              answer: 3,
+            },
+            {
+              q: "Câu 6: INNER JOIN sẽ trả về kết quả nào?",
+              options: [
+                "Tất cả các bản ghi của bảng bên trái.",
+                "Tất cả các bản ghi của bảng bên phải.",
+                "Chỉ các bản ghi có sự khớp nhau ở cả hai bảng.",
+                "Tất cả bản ghi của cả hai bảng.",
+              ],
+              answer: 2,
+            },
+            {
+              q: "Câu 7: Sự khác biệt giữa kiểu VARCHAR và NVARCHAR?",
+              options: [
+                "VARCHAR lưu độ dài cố định, NVARCHAR lưu độ dài thay đổi.",
+                "NVARCHAR hỗ trợ lưu trữ ký tự Unicode (tiếng Việt có dấu).",
+                "VARCHAR có tốc độ chậm hơn NVARCHAR.",
+                "NVARCHAR chỉ tồn tại trong MySQL.",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 8: COUNT(*) và COUNT(Tên_Cột) khác nhau ở điểm nào?",
+              options: [
+                "COUNT(*) đếm cả những dòng có giá trị NULL ở cột, COUNT(Tên_Cột) bỏ qua NULL.",
+                "COUNT(Tên_Cột) chạy nhanh hơn COUNT(*).",
+                "Không có sự khác biệt.",
+                "COUNT(*) chỉ đếm các dòng không trùng lặp.",
+              ],
+              answer: 0,
+            },
+            {
+              q: "Câu 9: Ràng buộc (Constraint) nào đảm bảo không có giá trị trùng lặp và không chứa giá trị NULL?",
+              options: ["UNIQUE", "FOREIGN KEY", "PRIMARY KEY", "CHECK"],
+              answer: 2,
+            },
+            {
+              q: "Câu 10: Ký tự đại diện (Wildcard) nào dùng trong toán tử LIKE để đại diện cho đúng MỘT ký tự bất kỳ?",
+              options: ["%", "*", "_ (Underscore)", "?"],
+              answer: 2,
+            },
+            {
+              q: "Câu 11: Cổng (Port) mặc định của MySQL và SQL Server lần lượt là?",
+              options: [
+                "8080 và 1433",
+                "3306 và 1433",
+                "1433 và 3306",
+                "3306 và 8080",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 12: Để giới hạn lấy 5 bản ghi đầu tiên, cú pháp nào đúng?",
+              options: [
+                "LIMIT 5 (SQL Server) / TOP 5 (MySQL)",
+                "TOP 5 (SQL Server) / LIMIT 5 (MySQL)",
+                "FETCH FIRST 5 (cả hai)",
+                "MAX 5 (cả hai)",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 13: Để tạo một cột tự động tăng giá trị khi thêm mới bản ghi, ta dùng từ khóa nào?",
+              options: [
+                "AUTO_INCREMENT (MySQL) và IDENTITY (SQL Server)",
+                "IDENTITY (MySQL) và AUTO_INCREMENT (SQL Server)",
+                "SERIAL (MySQL) và AUTO_INCREMENT (SQL Server)",
+                "AUTO_NUM (cả hai)",
+              ],
+              answer: 0,
+            },
+            {
+              q: "Câu 14: Lệnh nào dùng để nối chuỗi (Concatenation) trong SQL Server?",
+              options: [
+                "CONCAT()",
+                "Dấu cộng (+)",
+                "Dấu hai gạch (||)",
+                "Cả A và B đều đúng",
+              ],
+              answer: 3,
+            },
+            {
+              q: "Câu 15: Hàm lấy ngày giờ hiện tại của hệ thống?",
+              options: [
+                "GETDATE() trong MySQL, NOW() trong SQL Server.",
+                "NOW() trong MySQL, GETDATE() trong SQL Server.",
+                "CURDATE() dùng chung cho cả hai.",
+                "SYSDATE() dùng chung cho cả hai.",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 16: Lệnh để gọi một Stored Procedure đã được tạo?",
+              options: [
+                "EXEC (SQL Server) và CALL (MySQL)",
+                "CALL (SQL Server) và EXEC (MySQL)",
+                "RUN (cả hai)",
+                "EXECUTE (cả hai)",
+              ],
+              answer: 0,
+            },
+            {
+              q: "Câu 17: Xử lý giá trị NULL: Nếu muốn trả về số 0 khi cột bị NULL, cú pháp nào đúng?",
+              options: [
+                "IFNULL(cot, 0) trong SQL Server",
+                "ISNULL(cot, 0) trong MySQL",
+                "ISNULL(cot, 0) trong SQL Server / IFNULL(cot, 0) trong MySQL",
+                "NVL(cot, 0) trong cả hai",
+              ],
+              answer: 2,
+            },
+            {
+              q: "Câu 18: Storage Engine mặc định (hỗ trợ Transaction) của MySQL là gì?",
+              options: ["MyISAM", "InnoDB", "Memory", "SQLEngine"],
+              answer: 1,
+            },
+            {
+              q: "Câu 19: Để lấy độ dài của một chuỗi, hàm nào được sử dụng?",
+              options: [
+                "LENGTH() (MySQL) và LEN() (SQL Server)",
+                "LEN() (MySQL) và LENGTH() (SQL Server)",
+                "SIZE() trong cả hai",
+                "STRLEN() trong cả hai",
+              ],
+              answer: 0,
+            },
+            {
+              q: "Câu 20: Kiểu dữ liệu nào lưu giá trị Boolean (True/False) một cách tối ưu nhất?",
+              options: [
+                "BOOLEAN trong SQL Server, BIT trong MySQL.",
+                "BIT trong SQL Server, TINYINT(1) hoặc BOOLEAN trong MySQL.",
+                "VARCHAR(5) cho cả hai.",
+                "INT cho cả hai.",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 21: Câu lệnh TRUNCATE khác với DELETE ở điểm nào?",
+              options: [
+                "TRUNCATE xóa cấu trúc bảng, DELETE chỉ xóa dữ liệu.",
+                "TRUNCATE không ghi log từng dòng bị xóa, nên nhanh hơn và thường không thể ROLLBACK.",
+                "DELETE có thể reset lại chỉ số tự tăng (Identity), TRUNCATE thì không.",
+                "Không có sự khác biệt.",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 22: Clustered Index (Chỉ mục cụm) có đặc điểm gì?",
+              options: [
+                "Một bảng có thể có nhiều Clustered Index.",
+                "Nó sắp xếp dữ liệu vật lý của bảng dựa trên cột được đánh index.",
+                "Nó tạo ra một bảng tham chiếu riêng rẽ để tăng tốc độ tìm kiếm.",
+                "Chỉ tạo được trên các cột kiểu số.",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 23: Vấn đề 'SQL Injection' xảy ra chủ yếu do nguyên nhân nào?",
+              options: [
+                "Cấu hình server cơ sở dữ liệu yếu.",
+                "Nối chuỗi (cộng chuỗi) trực tiếp tham số đầu vào từ người dùng vào câu truy vấn.",
+                "Không sử dụng HTTPS.",
+                "Dùng MySQL thay vì SQL Server.",
+              ],
+              answer: 1,
+            },
+            {
+              q: "Câu 24: Trigger được kích hoạt khi nào?",
+              options: [
+                "Bất cứ khi nào có câu lệnh SELECT được chạy.",
+                "Khi được gọi thủ công bằng lệnh EXECUTE.",
+                "Tự động kích hoạt khi có sự kiện INSERT, UPDATE hoặc DELETE xảy ra trên bảng.",
+                "Khi Database server khởi động.",
+              ],
+              answer: 2,
+            },
+            {
+              q: "Câu 25: Khi thực thi truy vấn có mệnh đề LEFT JOIN, nếu bảng bên phải không có bản ghi tương ứng thì điều gì xảy ra?",
+              options: [
+                "Lỗi cú pháp (Syntax error).",
+                "Truy vấn trả về kết quả bị thiếu các hàng của bảng bên trái.",
+                "Các cột của bảng bên phải sẽ hiển thị giá trị NULL ở hàng kết quả tương ứng.",
+                "Chỉ hiển thị các bản ghi khớp nhau giống hệt INNER JOIN.",
+              ],
+              answer: 2,
+            },
+          ]);
+
+          const startQuiz = () => {
+            if (playerName.value.trim() !== "") {
+              step.value = 1;
+              score.value = 0;
+              currentQuestionIndex.value = 0;
+            }
+          };
+
+          const checkAnswer = (selectedIndex) => {
+            if (
+              selectedIndex === questions.value[currentQuestionIndex].answer
+            ) {
+              score.value++;
+            }
+
+            if (currentQuestionIndex.value < questions.value.length - 1) {
+              currentQuestionIndex.value++;
+            } else {
+              finishQuiz();
+            }
+          };
+
+          const finishQuiz = async () => {
+            const now = new Date();
+            endTime.value = now.toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+
+            step.value = 2;
+            isSaving.value = true;
+
+            try {
+              await addDoc(collection(db, "quiz_results"), {
+                name: playerName.value,
+                score: score.value,
+                time: endTime.value,
+                timestamp: now.getTime(),
+              });
+              await fetchLeaderboard();
+            } catch (e) {
+              console.error("Lỗi khi lưu điểm: ", e);
+            } finally {
+              isSaving.value = false;
+            }
+          };
+
+          const fetchLeaderboard = async () => {
+            leaderboard.value = [];
+            const q = query(
+              collection(db, "quiz_results"),
+              orderBy("score", "desc"),
+              orderBy("timestamp", "asc"),
+              limit(5),
+            );
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach((doc) => {
+              leaderboard.value.push(doc.data());
+            });
+          };
+
+          const resetQuiz = () => {
+            step.value = 0;
+            playerName.value = "";
+          };
+
+          return {
+            step,
+            playerName,
+            score,
+            currentQuestionIndex,
+            questions,
+            endTime,
+            isSaving,
+            leaderboard,
+            startQuiz,
+            checkAnswer,
+            resetQuiz,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
